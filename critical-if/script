@@ -1,0 +1,63 @@
+#!/media/felipe/Geral/Faculdade/3 semestre/MAC0219/critical-if/ bash
+
+MAXT=4			#Numero maximo de threads
+MAXS=10000000	#Tamanho maximo do vetor
+
+TSTEP=1			#Incremento por loop da quantidade de threads (multiplicativo)
+SSTEP=10		#Incremento por loop do tamanho do vetor (multiplicativo)
+
+T=1				#Quantidade inicial de threads
+S=100			#Tamanho inicial do vetor
+
+#Imprime o topo da tabela
+print_table_top(){
+	echo "| sz \ t " | tr '\n' '|'  >> resultado.md
+	local s=$S
+	while [ $s -lt $MAXS ]
+	do
+		echo "$s" | tr '\n' '|'  >> resultado.md
+		#echo ""   | tr '\n' '|'  >> resultado.md
+
+		s=$(( $s * $SSTEP ))
+	done
+	echo "" >> resultado.md
+	echo "|---|---|---|---|---|---|" >> resultado.md
+}
+
+simulation_rep(){
+	# Realiza 50 vezes a função e guarda resultados em um arquivo .dat
+
+	rm ./in.dat
+	for i in {1..50}; do
+
+		./contention $T $S >> in.dat
+
+	done
+}
+
+for i in {1..10}; do
+	echo "# $i IFs" >> resultado.md
+	make IF=$i > ./src
+	print_table_top
+	while [ $T -le $MAXT ]
+	do
+
+		echo "|$T" | tr '\n' '|'  >> resultado.md
+
+		while [ $S -lt $MAXS ]
+		do
+			simulation_rep
+
+			./calc | tr '\n' '|' >> resultado.md
+			#echo ""            | tr '\n' '|'  >> resultado.txt
+			S=$(( $S * $SSTEP ))
+		done
+		S=100
+
+		T=$(( $T + $TSTEP ))
+		echo "" >> resultado.md
+	done
+	T=1
+
+	echo "" >> resultado.md
+done

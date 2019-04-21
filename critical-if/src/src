@@ -1,0 +1,3 @@
+sed "s!//@#@IF!IF_GT_MAX  IF_GT_MAX  IF_GT_MAX  IF_GT_MAX  IF_GT_MAX  IF_GT_MAX  IF_GT_MAX  IF_GT_MAX  IF_GT_MAX  IF_GT_MAX !" contention.c > .contention.c
+gcc -Wall -O0 .contention.c -o contention -lm -lpthread
+rm -f .contention.c
