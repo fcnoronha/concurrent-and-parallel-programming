@@ -4,6 +4,7 @@
 ---
 
 - Felipe Castro de Noronha - 10737032
+- Rafael Tsuha - 10692162
 
 ---
 
@@ -16,6 +17,10 @@ Execute da seguinte maneira:
     mpiexec -np <NUM_COMP> ./dmbrot <C0_REAL> <...> <SAÍDA>
 
 Onde NUM_COMP é o número de computadores na rede. O restante dos parâmetros são os mesmos da parte anterior.
+
+O programa foi testado em nossas máquinas com uma placa de video GeForce 940MX, não conseguimos rodar na dota por problemas de permissão.
+
+No makefile foi necessário adicionar o caminho para a biblioteca do openmpi na máquina em que testamos com -L/usr/lib/openmpi/, talvez esse caminho precise ser alterado em outras máquinas.
 
 ## O que foi feito
 

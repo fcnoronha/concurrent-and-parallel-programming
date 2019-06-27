@@ -2,7 +2,8 @@ CC     = gcc
 NVCC   = nvcc
 CFLAGS = -Wall -pedantic -fopenmp
 LDFLAGS = -fopenmp -lmpi -lpng -lstdc++
-INCLUDES=-I/usr/lib/x86_64-linux-gnu/openmpi/include/
+#INCLUDES=-I/usr/lib/x86_64-linux-gnu/openmpi/include/
+INCLUDES=-L/usr/lib/openmpi/
 RM     = rm -rf
 
 gpu: dmbrot.cu dmbrot.h
