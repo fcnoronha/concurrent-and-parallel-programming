@@ -1,0 +1,73 @@
+#include "utils.h"
+#include <assert.h>
+
+#define THS_PER_BLOCK 256
+
+__global__
+void gpu_work_1(double *arr, int c)
+{
+    const int id = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (id >= c) return;
+
+    for(int i = 0; i < GPU_WORK_ITERATIONS; ++i) {
+        if (arr[id] <= 0.5) {
+            arr[id] = laborious_func_le_half(arr[id]);
+        } else {
+            arr[id] = laborious_func_gt_half(arr[id]);
+        }
+    }
+}
+
+__global__
+void gpu_work_2(double *arr, int c)
+{
+    const int id = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (id >= c) return;
+
+    for(int i = 0; i < GPU_WORK_ITERATIONS; ++i) {
+        if (arr[id] <= 0.5) {
+            arr[id] = laborious_func_le_half(arr[id]);
+        } else {
+            arr[id] = laborious_func_gt_half(arr[id]);
+        }
+    }
+
+}
+
+// Launch the work on arr and return it at results;
+void launch_gpu_work_v2(double *arr, double **results)
+{
+    double *d_arr1, *d_arr2;
+    // assert(ARR_SIZE == THS_PER_BLOCK * NUM_BLOCKS);
+
+    double *aux1 = (double*)malloc(sizeof(double) * ARR_SIZE);
+    double *aux2 = (double*)malloc(sizeof(double) * ARR_SIZE);
+    int c1 = 0, c2 = 0;
+
+    for (int i = 0; i < ARR_SIZE; ++i) {
+        if (arr[i] <= 0.5) aux1[c1++] = arr[i];
+        else aux2[c2++] = arr[i];
+    }
+
+    cudaAssert(cudaMalloc(&d_arr1, c1 * sizeof(double)));
+    cudaAssert(cudaMemcpy(d_arr1, aux1, c1 * sizeof(double), cudaMemcpyHostToDevice));
+    gpu_work_1<<<DIV_CEIL_INT(ARR_SIZE, THS_PER_BLOCK), THS_PER_BLOCK>>>(d_arr1, c1);
+
+    cudaAssert(cudaMalloc(&d_arr2, c2 * sizeof(double)));
+    cudaAssert(cudaMemcpy(d_arr2, aux2, c2 * sizeof(double), cudaMemcpyHostToDevice));
+    gpu_work_2<<<DIV_CEIL_INT(ARR_SIZE, THS_PER_BLOCK), THS_PER_BLOCK>>>(d_arr2, c2);
+
+    cudaAssert(cudaDeviceSynchronize());
+
+    cudaAssert(cudaMemcpy(aux1, d_arr1, c1 * sizeof(double), cudaMemcpyDeviceToHost));
+    cudaAssert(cudaMemcpy(aux2, d_arr2, c2 * sizeof(double), cudaMemcpyDeviceToHost));
+
+    c1 = 0, c2 = 0;
+    for (int i = 0; i < ARR_SIZE; ++i) {
+        if (arr[i] <= 0.5) (*results)[i] = aux1[c1++];
+        else (*results)[i] = aux2[c2++];
+    }
+
+}

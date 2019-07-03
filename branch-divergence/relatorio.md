@@ -4,7 +4,7 @@
 
 ---
 
-Neste MiniEp tivemos como objetivo estudar o fenomeno de *branch divergence* que ocorre nas GPUs. Esse fenomeno ocorre quando temos quando temos condições (`if`, `else`, etc) dentro do kernel de uma GPU, quando isso ocorre, todas as threads de um *swarp* da GPU irão executar o kernel até o final, até que a ultima thread esteja trabalhando, descantando o trabalho inutil realizado pelas outras threds.
+Neste MiniEp tivemos como objetivo estudar o fenomeno de *branch divergence* que ocorre nas GPUs. Esse fenomeno ocorre quando temos condições (`if`, `else`, etc) dentro do kernel de uma GPU, quando isso ocorre, todas as threads de um *swarp* da GPU irão executar o kernel até o final, até que a ultima thread esteja trabalhando, descantando o trabalho *inutil* realizado pelas outras threds.
 
 A maneira que encontrei para reduzir o *branch divergence* é explicada a seguir.
 

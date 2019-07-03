@@ -1,46 +1,80 @@
 #include "utils.h"
 #include <assert.h>
 
-#define THS_PER_BLOCK 512
-#define NUM_BLOCKS 20
+#define THS_PER_BLOCK 256
+#define UNTIL_NORM 100
 
 __global__
-void gpu_work_less(double *arr)
+void gpu_work_le(double *arr, bool *is_less)
 {
-    const int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    const int id = blockDim.x * blockIdx.x + threadIdx.x;
 
-    if (arr[id] <= 0.5)
-        for (int i = 0; i < WORK_ITERATIONS_LE; ++i)
-                arr[idx] = next_step_le_half(arr[idx]);
+    if (id >= ARR_SIZE || !is_less[id]) return;
+
+    for(int i = 0; i < (GPU_WORK_ITERATIONS-UNTIL_NORM); ++i) {
+        if (arr[id] <= 0.5)
+            arr[id] = laborious_func_le_half(arr[id]);
+        else
+            arr[id] = laborious_func_gt_half(arr[id]);
+    }
 }
 
 __global__
-void gpu_work_great(double *arr)
+void gpu_work_gt(double *arr, bool *is_less)
 {
-    const int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    const int real_id = blockDim.x * blockIdx.x + threadIdx.x;
+    const int id = real_id % ARR_SIZE;
 
-    if (arr[idx] > 0.5)
-        for (int i = 0; i < WORK_ITERATIONS_GT; ++i);
-            arr[idx] = next_step_gt_half(arr[idx]);
+    if (real_id >= ARR_SIZE && is_less[id]) return;
+    if (real_id < ARR_SIZE && !is_less[id]) return;
 
+    for(int i = UNTIL_NORM; i < GPU_WORK_ITERATIONS; ++i) {
+        if (arr[id] <= 0.5)
+            arr[id] = laborious_func_le_half(arr[id]);
+        else
+            arr[id] = laborious_func_gt_half(arr[id]);
+    }
+}
+
+__global__
+void gpu_work_stable(double *arr, bool *is_less)
+{
+    const int id = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (id >= ARR_SIZE) return;
+
+    for(int i = 0; i < GPU_WORK_ITERATIONS && i < UNTIL_NORM; ++i) {
+        if (arr[id] <= 0.5)
+            arr[id] = laborious_func_le_half(arr[id]);
+        else
+            arr[id] = laborious_func_gt_half(arr[id]);
+    }
+
+    is_less[id] = (arr[id] <= 0.5);
 }
 
 // Launch the work on arr and return it at results;
 void launch_gpu_work_v2(double *arr, double **results)
 {
     double *d_arr;
-    assert(ARR_SIZE == THS_PER_BLOCK * NUM_BLOCKS);
+    bool *d_is_less;
 
     cudaAssert(cudaMalloc(&d_arr, ARR_SIZE * sizeof(double)));
+    cudaAssert(cudaMalloc(&d_is_less, ARR_SIZE * sizeof(bool)));
+
     cudaAssert(cudaMemcpy(d_arr, arr, ARR_SIZE * sizeof(double),
                           cudaMemcpyHostToDevice));
 
-    // Tem que confirmar se as chamadas são assincronas
-    gpu_work_less<<<NUM_BLOCKS, THS_PER_BLOCK>>>(d_arr);
-    gpu_work_great<<<NUM_BLOCKS, THS_PER_BLOCK>>>(d_arr);
+    gpu_work_stable<<<DIV_CEIL_INT(ARR_SIZE, THS_PER_BLOCK), THS_PER_BLOCK>>>(d_arr, d_is_less);
+    cudaAssert(cudaDeviceSynchronize());
+
+    // gpu_work_le<<<DIV_CEIL_INT(ARR_SIZE, THS_PER_BLOCK), THS_PER_BLOCK>>>(d_arr, d_is_less);
+    gpu_work_gt<<<DIV_CEIL_INT(ARR_SIZE, THS_PER_BLOCK)*2, THS_PER_BLOCK>>>(d_arr, d_is_less);
     cudaAssert(cudaDeviceSynchronize());
 
     cudaAssert(cudaMemcpy(*results, d_arr, ARR_SIZE * sizeof(double),
                           cudaMemcpyDeviceToHost));
+
     cudaAssert(cudaFree(d_arr));
+    cudaAssert(cudaFree(d_is_less));
 }
