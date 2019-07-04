@@ -4,6 +4,8 @@
 
 ---
 
+![](ex.png "Mandelbrot fractal")
+
 Nesse EP, usamos OpenMP e Cuda para implementar a geração de imagens do fractal de Mandelbrot. Para isso, basta executar
 
 ```terminal
